@@ -21,7 +21,6 @@ T MessageQueue<T>::receive()
     _cond.wait(ulock, [this]{ return !_queue.empty(); });
     T msg = std::move(_queue.back());
     _queue.pop_back();
-    std::cout << "message: " << msg << "removed from queue" << std::endl;
     return msg;
 
 }
@@ -33,7 +32,6 @@ void MessageQueue<T>::send(T&& msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> ulock(_mutex);
     _queue.emplace_back(msg);
-    std::cout << "message: " << msg << "added to queue" << std::endl;
     _cond.notify_one();
 }
 
@@ -51,14 +49,11 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
-    while(_msgQueue.receive()!=green)
-    {
-        std::this_thread::sleep_for(milliseconds(1));
-    }
+    while(_msgQueue.receive() != green){}
     return;
 }
 
-TrafficLightPhase TrafficLight::getCurrentPhase()
+TrafficLight::TrafficLightPhase TrafficLight::getCurrentPhase()
 {
     return __currentPhase;
 }
@@ -77,11 +72,10 @@ void TrafficLight::cycleThroughPhases()
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
-    auto prev_time = high_resolution_clock::now();
-    // auto loop_time = milliseconds(0);
+    
+    auto prev_time = high_resolution_clock::now();  //time at which prev loop ended
 
-    int rand_cycle_dur = 4000 + rand() % 2000;
-    std::cout << "random cycle duration in ms: " << rand_cycle_dur << std::endl;
+    int rand_cycle_dur = 4000 + rand() % 2000;  //in milliseconds
 
     while(true)
     {   
@@ -89,13 +83,13 @@ void TrafficLight::cycleThroughPhases()
 
         if(loop_time.count() >= rand_cycle_dur)
         {
-            auto newPhase = __currentPhase == red ? green : red; 
-            __currentPhase = newPhase;
+            __currentPhase = __currentPhase == red ? green : red; // toggle current phase
 
-            _msgQueue.send(std::move(newPhase));
+            _msgQueue.send(std::move(__currentPhase));  
             
-            prev_time = high_resolution_clock::now();
-            std::cout << "loop_time: " << loop_time.count() <<std::endl;
+            prev_time = high_resolution_clock::now();   //reset prev loop time
+
+            rand_cycle_dur = 4000 + rand() % 2000;  //reset random cycle duration
         }
         std::this_thread::sleep_for(milliseconds(1)); 
     }
