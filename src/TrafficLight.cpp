@@ -27,7 +27,7 @@ T MessageQueue<T>::receive()
 }
 
 template <typename T>
-void MessageQueue<T>::send(T &&msg)
+void MessageQueue<T>::send(T&& msg)
 {
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
@@ -51,7 +51,10 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
-    while(_msgQueue->receive()!=green){}
+    while(_msgQueue.receive()!=green)
+    {
+        std::this_thread::sleep_for(milliseconds(1));
+    }
     return;
 }
 
@@ -75,21 +78,25 @@ void TrafficLight::cycleThroughPhases()
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
     auto prev_time = high_resolution_clock::now();
-    auto loop_time = milliseconds(0);
+    // auto loop_time = milliseconds(0);
 
-    float rand_cycle_dur = 4000 + rand() % 2000;
+    int rand_cycle_dur = 4000 + rand() % 2000;
+    std::cout << "random cycle duration in ms: " << rand_cycle_dur << std::endl;
 
     while(true)
-    {
+    {   
+        auto loop_time = std::chrono::duration_cast<milliseconds>(high_resolution_clock::now() - prev_time);  
+
         if(loop_time.count() >= rand_cycle_dur)
         {
-            __currentPhase == red ? green : red; 
-            _msgQueue->send(std::move(__currentPhase));
+            auto newPhase = __currentPhase == red ? green : red; 
+            __currentPhase = newPhase;
+
+            _msgQueue.send(std::move(newPhase));
+            
             prev_time = high_resolution_clock::now();
             std::cout << "loop_time: " << loop_time.count() <<std::endl;
         }
-        
-        std::this_thread::sleep_for(milliseconds(1));    
-        loop_time = std::chrono::duration_cast<milliseconds>(high_resolution_clock::now() - prev_time);        
+        std::this_thread::sleep_for(milliseconds(1)); 
     }
 }

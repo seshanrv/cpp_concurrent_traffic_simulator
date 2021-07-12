@@ -5,6 +5,7 @@
 #include <deque>
 #include <condition_variable>
 #include <future>
+#include <memory>
 #include "TrafficObject.h"
 
 // forward declarations to avoid include cycle
@@ -64,7 +65,7 @@ private:
     // and use it within the infinite loop to push each new TrafficLightPhase into it by calling 
     // send in conjunction with move semantics.
 
-    std::shared_ptr<MessageQueue<TrafficLightPhase>> _msgQueue;
+    MessageQueue<TrafficLightPhase> _msgQueue;
     std::condition_variable _condition;
     std::mutex _mutex;
     TrafficLightPhase __currentPhase;
